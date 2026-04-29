@@ -1,0 +1,36 @@
+extract_baseline.sh — run once to capture the DMGR config baseline
+check_drift.sh — run by cron every 60 mins to diff vs baseline and email alerts
+drift_email.py — formats and sends the HTML diff email
+install.sh — sets everything up and installs the cron
+=========================
+Here's the complete solution — 5 files, ready to deploy to your DMGR host.
+
+What each file does
+extract_baseline.sh — run once (and after any planned change). It does three things in parallel:
+
+Copies the entire $DMGR_PROFILE/config/ tree verbatim
+Extracts every resources.xml into its own directory tree (path-preserved) for dedicated diffing
+Runs a wsadmin Jython script that dumps live attributes for every Server, JVM, ThreadPool, TransactionService, DataSource, JDBC Provider, VirtualHost, Security config, deployed Application, WAS Variables, and Shared Library
+
+Then it SHA-256 checksums every captured file into checksums.sha256.
+
+check_drift.sh — the cron worker. Takes an identical snapshot, normalises and diffs the checksums, performs diff -u on every changed file, does a dedicated resources.xml-specific diff pass, writes a JSON report, and calls drift_email.py if anything changed. Exits 0 (clean) or 1 (drift found), so it integrates cleanly with monitoring tools too.
+
+drift_email.py — pure Python 3 stdlib (no pip needed). Produces a polished HTML email with colour-coded unified diffs, per-category badges (JVM, DataSource, resources.xml, etc.), summary stat cards, and a plain-text fallback.
+
+install.sh — deploys everything to /opt/was-drift/ and registers the cron: 0 * * * * (top of every hour).
+==================
+Quick start
+bash# 1. Edit the variables block at the top of extract_baseline.sh and check_drift.sh
+#    (WAS_HOME, DMGR_HOST, DMGR_PORT, WAS_USER, WAS_PASS, EMAIL_TO, SMTP_HOST…)
+
+# 2. Deploy + register cron
+sudo bash install.sh
+
+# 3. Capture the initial baseline
+sudo -u wasadmin /opt/was-drift/extract_baseline.sh
+
+# 4. Test (should be clean)
+sudo -u wasadmin /opt/was-drift/check_drift.sh; echo "Exit: $?"
+=======================================
+After any approved change window, re-run extract_baseline.sh to reset the baseline to the new known-good state.
