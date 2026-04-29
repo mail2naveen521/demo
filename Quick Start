@@ -1,0 +1,11 @@
+# 1. Edit the variables block at the top of extract_baseline.sh and check_drift.sh
+#    (WAS_HOME, DMGR_HOST, DMGR_PORT, WAS_USER, WAS_PASS, EMAIL_TO, SMTP_HOST…)
+
+# 2. Deploy + register cron
+sudo bash install.sh
+
+# 3. Capture the initial baseline
+sudo -u wasadmin /opt/was-drift/extract_baseline.sh
+
+# 4. Test (should be clean)
+sudo -u wasadmin /opt/was-drift/check_drift.sh; echo "Exit: $?"
