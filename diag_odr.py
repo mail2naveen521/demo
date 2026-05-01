@@ -165,7 +165,10 @@ try:
         sname = cleanName(line)
         try:
             stype = AdminConfig.showAttribute(line, 'serverType')
-            stype = stype.strip() if stype else 'UNKNOWN'
+            if stype:
+                stype = stype.strip()
+            else:
+                stype = 'UNKNOWN'
         except:
             stype = 'UNKNOWN'
         if stype not in ('NODE_AGENT', 'DEPLOYMENT_MANAGER'):
@@ -233,7 +236,9 @@ print ""
 print "=" * 60
 print "Files produced:"
 print "=" * 60
-for f in sorted(os.listdir(outDir)):
+files = os.listdir(outDir)
+files.sort()
+for f in files:
     full = os.path.join(outDir, f)
     if os.path.isfile(full):
         sz = os.path.getsize(full)
