@@ -1,0 +1,17 @@
+# Step 1: confirm cell name exactly
+cellRaw = AdminConfig.list('Cell')
+print "Raw:", repr(cellRaw)
+cellName = cellRaw.split('(')[0].strip()
+print "Clean:", repr(cellName)
+
+# Step 2: try extracting with simplest possible scope, NO options
+AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test1.props', '-configData', 'Cell=' + cellName])
+
+# Step 3: if step 2 failed, try with explicit Node scope (sometimes Cell-only doesn't work)
+nodeRaw = AdminConfig.list('Node').splitlines()[0]
+nodeName = nodeRaw.split('(')[0].strip()
+print "Node:", repr(nodeName)
+AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test2.props', '-configData', 'Cell=' + cellName + ',Node=' + nodeName])
+
+# Step 4: try with the -options arg in different forms
+AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test3.props', '-configData', 'Cell=' + cellName + ',Node=' + nodeName, '-options', '[[PortablePropertiesFile true]]'])
