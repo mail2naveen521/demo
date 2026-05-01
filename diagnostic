@@ -1,0 +1,7 @@
+print "Cell:", repr(AdminConfig.list('Cell').splitlines()[0].split('(')[0])
+print "Nodes:"
+for n in AdminConfig.list('Node').splitlines():
+    print "  ", repr(n.split('(')[0])
+print "Apps:"
+for a in AdminApp.list().splitlines():
+    print "  ", repr(a)
