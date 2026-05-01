@@ -1,17 +1,71 @@
-# Step 1: confirm cell name exactly
+###############################################################################
+# diag_step12.py
+#
+# Minimal diagnostic - just steps 1 and 2 of the original diagnostic.
+# Run with:
+#   $DMGR_PROFILE/bin/wsadmin.sh -lang jython -f diag_step12.py
+###############################################################################
+
+import sys
+
+print "=" * 60
+print "STEP 1: discover cell name"
+print "=" * 60
+
 cellRaw = AdminConfig.list('Cell')
-print "Raw:", repr(cellRaw)
-cellName = cellRaw.split('(')[0].strip()
-print "Clean:", repr(cellName)
+print "Raw output from AdminConfig.list('Cell'):"
+print repr(cellRaw)
 
-# Step 2: try extracting with simplest possible scope, NO options
-AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test1.props', '-configData', 'Cell=' + cellName])
+# Take first line, strip the (configId) suffix, strip whitespace
+cellLine = cellRaw.splitlines()[0]
+print "First line: %s" % repr(cellLine)
 
-# Step 3: if step 2 failed, try with explicit Node scope (sometimes Cell-only doesn't work)
-nodeRaw = AdminConfig.list('Node').splitlines()[0]
-nodeName = nodeRaw.split('(')[0].strip()
-print "Node:", repr(nodeName)
-AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test2.props', '-configData', 'Cell=' + cellName + ',Node=' + nodeName])
+parenIdx = cellLine.find('(')
+if parenIdx >= 0:
+    cellName = cellLine[:parenIdx]
+else:
+    cellName = cellLine
+cellName = cellName.strip()
+print "Clean cell name: %s" % repr(cellName)
 
-# Step 4: try with the -options arg in different forms
-AdminTask.extractConfigProperties(['-propertiesFileName', '/tmp/test3.props', '-configData', 'Cell=' + cellName + ',Node=' + nodeName, '-options', '[[PortablePropertiesFile true]]'])
+print ""
+print "=" * 60
+print "STEP 2: extract Cell scope (no -options)"
+print "=" * 60
+
+outFile = '/tmp/test1.props'
+configData = 'Cell=' + cellName
+print "configData = %s" % repr(configData)
+print "outFile    = %s" % repr(outFile)
+
+try:
+    AdminTask.extractConfigProperties([
+        '-propertiesFileName', outFile,
+        '-configData', configData
+    ])
+    import os
+    if os.path.exists(outFile):
+        print "SUCCESS: file written, size = %d bytes" % os.path.getsize(outFile)
+    else:
+        print "WARN: call returned but file not found"
+except Exception, e:
+    print "FAILED:"
+    print "  Exception class: %s" % e.__class__.__name__
+    print "  Message: %s" % str(e)
+    # Walk Java cause chain
+    try:
+        cause = e
+        depth = 0
+        while cause is not None and depth < 5:
+            print "  [cause %d] %s: %s" % (
+                depth, cause.__class__.__name__, str(cause))
+            if hasattr(cause, 'getCause'):
+                nxt = cause.getCause()
+                if nxt is None or nxt == cause:
+                    break
+                cause = nxt
+            else:
+                break
+            depth = depth + 1
+    except:
+        pass
